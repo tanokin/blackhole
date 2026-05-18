@@ -24,7 +24,8 @@ body{background:#000510;color:#fff;font-family:'Segoe UI',system-ui,sans-serif;m
 .btn-neutral{background:rgba(255,255,255,0.08);color:#fff;border:1.5px solid rgba(255,255,255,0.25)}
 .btn-sm{padding:10px 18px;font-size:13px;max-width:150px}
 /* Settings */
-.card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:20px;width:100%;max-width:340px;margin-bottom:14px}
+#settingsScreen { justify-content: flex-start; padding-top: 40px; overflow-y: auto; }
+.card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:20px;width:100%;max-width:340px;margin-bottom:14px;flex-shrink:0}
 .card-title{font-size:12px;color:#7eb8ff;letter-spacing:2px;margin-bottom:14px;text-transform:uppercase}
 .level-grid{display:flex;flex-wrap:wrap;gap:7px;justify-content:center}
 .lvl-btn{width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.05);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.18s}
@@ -49,6 +50,14 @@ body{background:#000510;color:#fff;font-family:'Segoe UI',system-ui,sans-serif;m
 .sbox-val{font-size:14px;font-weight:800}
 .sbox.p1 .sbox-val{color:#ff2d6e}
 .sbox.p2 .sbox-val{color:#00e5ff}
+/* Number Trays */
+.number-tray{display:none;width:100%;flex-wrap:wrap;gap:6px;justify-content:center;padding:8px 4px;background:rgba(0,0,0,0.2);flex-shrink:0}
+.number-tray.show{display:flex}
+.tray-btn{width:36px;height:36px;border-radius:50%;border:2px solid;font-weight:800;background:rgba(0,0,0,0.4);color:#fff;cursor:pointer;transition:transform 0.1s}
+.p1-tray .tray-btn{border-color:#ff2d6e;color:#ffaac8}
+.p2-tray .tray-btn{border-color:#00e5ff;color:#80f0ff}
+.tray-btn.used{opacity:0.15;pointer-events:none}
+.tray-btn.selected{transform:scale(1.15);box-shadow:0 0 12px currentColor;background:currentColor;color:#000}
 /* Board */
 #boardWrap{flex:1;width:100%;display:flex;align-items:center;justify-content:center;padding:8px;overflow:hidden;min-height:0}
 #gameBoard{width:100%;height:100%;max-width:360px}
@@ -144,7 +153,22 @@ body{background:#000510;color:#fff;font-family:'Segoe UI',system-ui,sans-serif;m
 
 <!-- SETTINGS -->
 <div class="screen" id="settingsScreen">
-  <h2 style="font-size:20px;font-weight:800;margin-bottom:20px;color:#ffd700">⚙️ ゲーム設定</h2>
+  <h2 style="font-size:20px;font-weight:800;margin-bottom:20px;color:#ffd700;flex-shrink:0;">⚙️ ゲーム設定</h2>
+  <div class="card">
+    <div class="card-title">🗺️ マップ形状</div>
+    <div class="turn-row">
+      <div class="turn-opt sp1" id="map1" onclick="setMap('original')">六角形</div>
+      <div class="turn-opt" id="map2" onclick="setMap('pyramid')">ピラミッド</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">🔢 数字のルール</div>
+    <div style="display:flex;flex-direction:column;gap:7px;">
+      <div class="turn-opt sp1" id="rule1" onclick="setRule('seq20')">1〜20 を交互に配置</div>
+      <div class="turn-opt" id="rule2" onclick="setRule('seq10')">各自 1〜10 を交互に配置</div>
+      <div class="turn-opt" id="rule3" onclick="setRule('free10')">各自 1〜10 を自由に配置</div>
+    </div>
+  </div>
   <div class="card" id="levelCard">
     <div class="card-title">🤖 CPU レベル</div>
     <div class="level-grid" id="levelGrid"></div>
@@ -156,8 +180,8 @@ body{background:#000510;color:#fff;font-family:'Segoe UI',system-ui,sans-serif;m
       <div class="turn-opt" id="to2" onclick="setFirst(1)">🔵 P2 が先攻</div>
     </div>
   </div>
-  <button class="btn btn-primary" onclick="startGame()">🚀 ゲームスタート！</button>
-  <button class="btn btn-neutral btn-sm" onclick="goTitle()">← 戻る</button>
+  <button class="btn btn-primary" style="flex-shrink:0" onclick="startGame()">🚀 ゲームスタート！</button>
+  <button class="btn btn-neutral btn-sm" style="flex-shrink:0;margin-bottom:40px" onclick="goTitle()">← 戻る</button>
 </div>
 
 <!-- GAME -->
@@ -171,9 +195,11 @@ body{background:#000510;color:#fff;font-family:'Segoe UI',system-ui,sans-serif;m
     </div>
     <div class="sbox p2"><div class="sbox-lbl" id="s2lbl">P2</div><div class="sbox-val" id="s2">0</div></div>
   </div>
+  <div class="number-tray p2-tray" id="p2Tray"></div>
   <div id="boardWrap">
     <svg id="gameBoard" viewBox="0 0 350 400" xmlns="http://www.w3.org/2000/svg"></svg>
   </div>
+  <div class="number-tray p1-tray" id="p1Tray"></div>
   <div class="cpu-box" id="cpuBox">
     <div style="color:#00e5ff;font-weight:700;font-size:14px">CPUが考え中...</div>
     <div class="cpu-dots"><div class="cpu-dot"></div><div class="cpu-dot"></div><div class="cpu-dot"></div></div>
@@ -206,7 +232,7 @@ body{background:#000510;color:#fff;font-family:'Segoe UI',system-ui,sans-serif;m
 <div id="modal" onclick="hideModal()">
   <div class="modal-box" onclick="event.stopPropagation()">
     <h3>📖 遊び方</h3>
-    <p>① 21個の円に、1〜20の数字を交互に書き込みます。</p>
+    <p>① 21個の円に、数字を交互に書き込みます。</p>
     <p>② 最後に残った<b style="color:#e040fb">空白の円</b>が「ブラックホール」！</p>
     <p>③ ブラックホールと線で直接つながっている円の数字を合計します。</p>
     <p>④ <b style="color:#ffd700">合計が高いプレイヤーの勝ち！</b></p>
@@ -216,29 +242,39 @@ body{background:#000510;color:#fff;font-family:'Segoe UI',system-ui,sans-serif;m
 </div>
 
 <script>
-// ── BOARD DEFINITION ──────────────────────────────────────────
-const NODES=[
-  [105,45],[175,45],[245,45],
-  [70,105],[140,105],[210,105],[280,105],
-  [105,165],[175,165],[245,165],
-  [70,225],[140,225],[210,225],[280,225],
-  [105,285],[175,285],[245,285],
-  [70,345],[140,345],[210,345],[280,345]
-];
-const EDGES=[
-  [0,1],[1,2],[3,4],[4,5],[5,6],[7,8],[8,9],
-  [10,11],[11,12],[12,13],[14,15],[15,16],[17,18],[18,19],[19,20],
-  [0,3],[0,4],[1,4],[1,5],[2,5],[2,6],
-  [3,7],[4,7],[4,8],[5,8],[5,9],[6,9],
-  [7,10],[7,11],[8,11],[8,12],[9,12],[9,13],
-  [10,14],[11,14],[11,15],[12,15],[12,16],[13,16],
-  [14,17],[14,18],[15,18],[15,19],[16,19],[16,20]
-];
-const ADJ=Array.from({length:21},()=>[]);
-for(const[a,b]of EDGES){ADJ[a].push(b);ADJ[b].push(a);}
+// ── MAP DEFINITIONS ──────────────────────────────────────────
+const MAP_ORIGINAL = {
+  nodes:[[105,45],[175,45],[245,45],[70,105],[140,105],[210,105],[280,105],[105,165],[175,165],[245,165],[70,225],[140,225],[210,225],[280,225],[105,285],[175,285],[245,285],[70,345],[140,345],[210,345],[280,345]],
+  edges:[[0,1],[1,2],[3,4],[4,5],[5,6],[7,8],[8,9],[10,11],[11,12],[12,13],[14,15],[15,16],[17,18],[18,19],[19,20],[0,3],[0,4],[1,4],[1,5],[2,5],[2,6],[3,7],[4,7],[4,8],[5,8],[5,9],[6,9],[7,10],[7,11],[8,11],[8,12],[9,12],[9,13],[10,14],[11,14],[11,15],[12,15],[12,16],[13,16],[14,17],[14,18],[15,18],[15,19],[16,19],[16,20]]
+};
+const MAP_PYRAMID = (function(){
+  const n=[], e=[];
+  const rows = 6;
+  const startY = 40, spacingY = 60, spacingX = 64, centerX = 175;
+  let idx=0;
+  for(let r=1; r<=rows; r++){
+    const startX = centerX - (r-1)*(spacingX/2);
+    for(let c=0; c<r; c++){
+      n.push([startX + c*spacingX, startY + (r-1)*spacingY]);
+      if(c > 0) e.push([idx-1, idx]);
+      if(r > 1) {
+        if(c < r-1) e.push([idx - r + 1, idx]);
+        if(c > 0) e.push([idx - r, idx]);
+      }
+      idx++;
+    }
+  }
+  return {nodes:n, edges:e};
+})();
 
 // ── STATE ──────────────────────────────────────────────────────
-let G={mode:'cpu',level:5,firstPlayer:0,curPlayer:0,cells:Array(21).fill(null),curNum:1,over:false,muted:false,cpuP:1};
+let G={
+  mode:'cpu', level:5, firstPlayer:0, curPlayer:0,
+  mapType:'original', ruleType:'seq20',
+  cells:Array(21).fill(null), curNum:1, over:false, muted:false, cpuP:1,
+  p1Pool:[], p2Pool:[], selectedNum:null,
+  nodes:[], edges:[], adj:[]
+};
 
 // ── AUDIO ──────────────────────────────────────────────────────
 let AC=null,bgmTimer=null,bgmStep=0;
@@ -312,6 +348,19 @@ function selectMode(m){
   show('settingsScreen');
 }
 
+function setMap(m){
+  sndBtn(); G.mapType=m;
+  document.getElementById('map1').className='turn-opt'+(m==='original'?' sp1':'');
+  document.getElementById('map2').className='turn-opt'+(m==='pyramid'?' sp1':'');
+}
+
+function setRule(r){
+  sndBtn(); G.ruleType=r;
+  document.getElementById('rule1').className='turn-opt'+(r==='seq20'?' sp1':'');
+  document.getElementById('rule2').className='turn-opt'+(r==='seq10'?' sp1':'');
+  document.getElementById('rule3').className='turn-opt'+(r==='free10'?' sp1':'');
+}
+
 function setFirst(p){
   sndBtn();G.firstPlayer=p;
   document.getElementById('to1').className='turn-opt'+(p===0?' sp1':'');
@@ -321,21 +370,19 @@ function setFirst(p){
 // ── BOARD RENDER ───────────────────────────────────────────────
 function buildBoard(){
   const svg=document.getElementById('gameBoard');svg.innerHTML='';
-  // Edges
   const eg=mkSVG('g');eg.id='egroup';
-  for(const[a,b]of EDGES){
+  for(const[a,b]of G.edges){
     const l=mkSVG('line');
-    l.setAttribute('x1',NODES[a][0]);l.setAttribute('y1',NODES[a][1]);
-    l.setAttribute('x2',NODES[b][0]);l.setAttribute('y2',NODES[b][1]);
+    l.setAttribute('x1',G.nodes[a][0]);l.setAttribute('y1',G.nodes[a][1]);
+    l.setAttribute('x2',G.nodes[b][0]);l.setAttribute('y2',G.nodes[b][1]);
     l.classList.add('edge-line');l.id=`e${Math.min(a,b)}_${Math.max(a,b)}`;
     eg.appendChild(l);
   }
   svg.appendChild(eg);
-  // Nodes
   const ng=mkSVG('g');ng.id='ngroup';
   for(let i=0;i<21;i++){
     const g=mkSVG('g');g.id=`c${i}`;g.classList.add('cell-g');
-    g.setAttribute('transform',`translate(${NODES[i][0]},${NODES[i][1]})`);
+    g.setAttribute('transform',`translate(${G.nodes[i][0]},${G.nodes[i][1]})`);
     g.addEventListener('click',()=>onCell(i));
     const c=mkSVG('circle');c.setAttribute('r','26');c.classList.add('cell-bg');
     const t=mkSVG('text');t.classList.add('cell-txt');t.setAttribute('x','0');t.setAttribute('y','1');
@@ -344,7 +391,6 @@ function buildBoard(){
   svg.appendChild(ng);
 }
 function mkSVG(tag){return document.createElementNS('http://www.w3.org/2000/svg',tag);}
-
 function cellEl(i){return document.getElementById(`c${i}`);}
 function edgeEl(a,b){return document.getElementById(`e${Math.min(a,b)}_${Math.max(a,b)}`);}
 
@@ -371,49 +417,161 @@ function markBH(i){
   const g=cellEl(i);if(!g)return;
   g.classList.add('bh','filled');
   g.querySelector('.cell-txt').textContent='★';
-  for(const n of ADJ[i]){const e=edgeEl(i,n);if(e)e.classList.add('hl');}
+  for(const n of G.adj[i]){const e=edgeEl(i,n);if(e)e.classList.add('hl');}
+}
+
+// ── TRAYS ──────────────────────────────────────────────────────
+function renderTrays(){
+  const t1 = document.getElementById('p1Tray');
+  const t2 = document.getElementById('p2Tray');
+  t1.innerHTML = ''; t2.innerHTML = '';
+  for(let i=1; i<=10; i++){
+    const b1 = document.createElement('button');
+    b1.className = 'tray-btn' + (!G.p1Pool.includes(i) ? ' used' : '') + (G.curPlayer===0 && G.selectedNum===i ? ' selected' : '');
+    b1.textContent = i;
+    b1.onclick = () => selectNum(0, i);
+    t1.appendChild(b1);
+
+    const b2 = document.createElement('button');
+    b2.className = 'tray-btn' + (!G.p2Pool.includes(i) ? ' used' : '') + (G.curPlayer===1 && G.selectedNum===i ? ' selected' : '');
+    b2.textContent = i;
+    b2.onclick = () => selectNum(1, i);
+    t2.appendChild(b2);
+  }
+}
+
+function selectNum(p, n){
+  if(G.curPlayer !== p || G.over) return;
+  if(p === 0 && !G.p1Pool.includes(n)) return;
+  if(p === 1 && !G.p2Pool.includes(n)) return;
+  sndBtn();
+  G.selectedNum = n;
+  renderTrays();
+  updateHdr();
 }
 
 // ── GAME LOGIC ─────────────────────────────────────────────────
 function startGame(){
   sndBtn();initAC();
-  G.curPlayer=G.firstPlayer;G.cells=Array(21).fill(null);G.curNum=1;G.over=false;
+  
+  const mapDef = G.mapType==='pyramid' ? MAP_PYRAMID : MAP_ORIGINAL;
+  G.nodes = mapDef.nodes;
+  G.edges = mapDef.edges;
+  G.adj = Array.from({length:21},()=>[]);
+  for(const[a,b]of G.edges){G.adj[a].push(b);G.adj[b].push(a);}
+
+  G.curPlayer=G.firstPlayer;
+  G.cells=Array(21).fill(null);
+  G.curNum=1;
+  G.over=false;
+  G.selectedNum = null;
+  
+  G.p1Pool = Array.from({length:10}, (_,i)=>i+1);
+  G.p2Pool = Array.from({length:10}, (_,i)=>i+1);
+
   document.getElementById('rb1').classList.remove('winner');
   document.getElementById('rb2').classList.remove('winner');
-  buildBoard();updateHdr();show('gameScreen');startBGM();
+  
+  const tr1 = document.getElementById('p1Tray');
+  const tr2 = document.getElementById('p2Tray');
+  if(G.ruleType==='free10'){
+    tr1.classList.add('show'); tr2.classList.add('show');
+    renderTrays();
+  } else {
+    tr1.classList.remove('show'); tr2.classList.remove('show');
+  }
+
+  buildBoard();
+  updateHdr();
+  show('gameScreen');
+  startBGM();
+  
   if(G.mode==='cpu'&&G.curPlayer===G.cpuP) scheduleCPU();
 }
 
 function onCell(i){
   if(G.over||G.cells[i]||( G.mode==='cpu'&&G.curPlayer===G.cpuP))return;
+  if(G.ruleType==='free10' && !G.selectedNum) return;
   place(i);
 }
 
 function place(i){
   if(G.cells[i]||G.over)return;
-  G.cells[i]={n:G.curNum,p:G.curPlayer};
-  renderCell(i,true);sndPlace(G.curPlayer);G.curNum++;
+  
+  let numToPlace = G.curNum;
+  if(G.ruleType === 'free10'){
+    if(!G.selectedNum) return; 
+    numToPlace = G.selectedNum;
+    if(G.curPlayer===0) G.p1Pool = G.p1Pool.filter(x=>x!==numToPlace);
+    else G.p2Pool = G.p2Pool.filter(x=>x!==numToPlace);
+    G.selectedNum = null; 
+  }
+  
+  G.cells[i]={n:numToPlace, p:G.curPlayer};
+  renderCell(i,true); sndPlace(G.curPlayer);
+  
   const filled=G.cells.filter(c=>c).length;
   if(filled===20){setTimeout(endGame,700);return;}
   if(20-filled<=3)setTimeout(sndTension,450);
-  G.curPlayer^=1;updateHdr();
-  if(G.mode==='cpu'&&G.curPlayer===G.cpuP)scheduleCPU();
+  
+  G.curPlayer^=1; 
+  if(G.ruleType==='free10') renderTrays();
+  updateHdr();
+
+  if(G.mode==='cpu'&&G.curPlayer===G.cpuP) scheduleCPU();
 }
 
 function updateHdr(){
-  const nm=document.getElementById('tname'),nu=document.getElementById('tnum');
+  const nm=document.getElementById('tname'), nu=document.getElementById('tnum');
   if(G.curPlayer===0){nm.textContent='プレイヤー1';nm.className='turn-name p1';}
   else{nm.textContent=G.mode==='cpu'?'CPU':'プレイヤー2';nm.className='turn-name p2';}
-  nu.textContent=G.curNum;
-  const placed=G.cells.filter(c=>c);
-  document.getElementById('s1').textContent=placed.filter(c=>c.p===0).length;
-  document.getElementById('s2').textContent=placed.filter(c=>c.p===1).length;
+  
+  const placed = G.cells.filter(c=>c).length;
+  
+  if(G.ruleType === 'seq20'){
+    G.curNum = placed + 1;
+    nu.textContent = G.curNum;
+  } else if(G.ruleType === 'seq10'){
+    G.curNum = Math.floor(placed / 2) + 1;
+    nu.textContent = G.curNum;
+  } else {
+    if(G.selectedNum) nu.textContent = G.selectedNum;
+    else nu.textContent = '?';
+  }
+
+  document.getElementById('s1').textContent=G.cells.filter(c=>c&&c.p===0).length;
+  document.getElementById('s2').textContent=G.cells.filter(c=>c&&c.p===1).length;
+
+  if(G.ruleType==='free10'){
+    document.getElementById('p1Tray').style.opacity = (G.curPlayer===0 && !G.over) ? '1' : '0.3';
+    document.getElementById('p2Tray').style.opacity = (G.curPlayer===1 && !G.over) ? '1' : '0.3';
+    if(G.mode==='cpu') document.getElementById('p2Tray').style.display = 'none';
+    else document.getElementById('p2Tray').style.display = 'flex';
+  }
 }
 
 // ── CPU AI ─────────────────────────────────────────────────────
 function scheduleCPU(){
   document.getElementById('cpuBox').classList.add('show');
-  setTimeout(()=>{document.getElementById('cpuBox').classList.remove('show');place(cpuPick());},500+Math.random()*700);
+  setTimeout(()=>{
+    document.getElementById('cpuBox').classList.remove('show');
+    if(G.ruleType === 'free10') {
+      const pool = G.p2Pool;
+      let chosenNum = pool[0];
+      if(pool.length > 0) {
+        if(G.level < 4) {
+          chosenNum = pool[Math.floor(Math.random()*pool.length)];
+        } else {
+          if(Math.random() > 0.3) chosenNum = Math.max(...pool);
+          else chosenNum = pool[Math.floor(Math.random()*pool.length)];
+        }
+      }
+      G.selectedNum = chosenNum;
+      updateHdr();
+    }
+    const targetNode = cpuPick();
+    place(targetNode);
+  }, 500+Math.random()*700);
 }
 
 function cpuPick(){
@@ -427,12 +585,14 @@ function cpuPick(){
 }
 
 function cpuScore(idx,empty){
-  const bhs=empty.filter(e=>e!==idx);const n=G.curNum;let sc=0;
+  const bhs=empty.filter(e=>e!==idx);
+  const n = (G.ruleType === 'free10') ? G.selectedNum : G.curNum;
+  let sc=0;
   for(const bh of bhs){
-    if(ADJ[bh].includes(idx))sc+=n/bhs.length;
-    if(G.level>=7){let opp=0;for(const nb of ADJ[bh]){const c=G.cells[nb];if(c&&c.p!==G.cpuP)opp+=c.n;}sc-=opp*0.04/bhs.length;}
+    if(G.adj[bh].includes(idx))sc+=n/bhs.length;
+    if(G.level>=7){let opp=0;for(const nb of G.adj[bh]){const c=G.cells[nb];if(c&&c.p!==G.cpuP)opp+=c.n;}sc-=opp*0.04/bhs.length;}
   }
-  if(G.level>=6){const emptyNbs=ADJ[idx].filter(nb=>!G.cells[nb]).length;sc+=emptyNbs*n*0.08;}
+  if(G.level>=6){const emptyNbs=G.adj[idx].filter(nb=>!G.cells[nb]).length;sc+=emptyNbs*n*0.08;}
   return sc;
 }
 
@@ -441,13 +601,13 @@ function endGame(){
   G.over=true;stopBGM();
   const bh=G.cells.findIndex(c=>!c);
   sndBH();markBH(bh);
-  const calc=p=>ADJ[bh].map(nb=>G.cells[nb]).filter(c=>c&&c.p===p).reduce((s,c)=>s+c.n,0);
+  const calc=p=>G.adj[bh].map(nb=>G.cells[nb]).filter(c=>c&&c.p===p).reduce((s,c)=>s+c.n,0);
   const sc1=calc(0),sc2=calc(1);
   setTimeout(()=>showResult(bh,sc1,sc2),2200);
 }
 
 function showResult(bh,sc1,sc2){
-  document.getElementById('bhInfo').innerHTML=`ブラックホール: マス ${bh+1}（隣接 ${ADJ[bh].length}マス）<br>繋がっている数字を合計中...`;
+  document.getElementById('bhInfo').innerHTML=`ブラックホール: マス ${bh+1}（隣接 ${G.adj[bh].length}マス）<br>繋がっている数字を合計中...`;
   document.getElementById('rl2').textContent=G.mode==='cpu'?'CPU':'PLAYER 2';
   animNum('rn1',sc1);animNum('rn2',sc2);
   const wt=document.getElementById('winTxt');
